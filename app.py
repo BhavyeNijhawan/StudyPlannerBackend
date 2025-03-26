@@ -4,17 +4,28 @@ from flask_cors import CORS
 from datetime import datetime, time
 import os
 import logging
+from dotenv import load_dotenv
+
+load_dotenv()
 
 app = Flask(__name__)
 
-# Simplify CORS configuration
-CORS(app)
+# Configure CORS based on environment
+if os.environ.get('FLASK_ENV') == 'production':
+    CORS(app, resources={r"/api/*": {"origins": ["https://sp-frontend.onrender.com"]}})
+else:
+    CORS(app)
 
 # Configure logging
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO if os.environ.get('FLASK_ENV') == 'production' else logging.DEBUG)
 logger = logging.getLogger(__name__)
 
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///tasks.db'
+# Database configuration
+database_url = os.environ.get('DATABASE_URL', 'sqlite:///tasks.db')
+if database_url.startswith("postgres://"):
+    database_url = database_url.replace("postgres://", "postgresql://", 1)
+
+app.config['SQLALCHEMY_DATABASE_URI'] = database_url
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
